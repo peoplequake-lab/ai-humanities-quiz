@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="description" content="AI 앞에서 당신은 어떤 사람인가요? 7가지 질문으로 알아보는 나의 AI 활용 유형 | Peoplequake Lab">
+  <meta property="og:title" content="AI 인문학 역량 검사 | Peoplequake Lab">
+  <meta property="og:description" content="AI를 얼마나 잘 쓰는지가 아닌, AI 앞에서 당신이 어떤 사람인지를 보여줍니다.">
+  <title>AI 인문학 역량 검사 | Peoplequake Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      background: #0C0C0C;
+      color: #F0F0F0;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #loading {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #0C0C0C;
+      z-index: 9999;
+      transition: opacity 0.4s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid #222;
+      border-top-color: #24C699;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes pulse-line {
+      0%,100% { transform: scaleY(1); }
+      50%      { transform: scaleY(1.6); }
+    }
+
+    .anim-up  { animation: fadeUp  0.5s ease forwards; }
+    .anim-in  { animation: fadeIn  0.4s ease forwards; }
+
+    .wrap {
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Progress */
+    .prog-rail {
+      position: fixed; top: 0; left: 0; right: 0; height: 2px;
+      background: #1A1A1A; z-index: 100;
+    }
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #24C699, #1aaa80);
+      transition: width 0.5s ease;
+    }
+
+    /* Cover */
+    .cover {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 20px;
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(36,198,153,0.06) 0%, transparent 70%), #0C0C0C;
+    }
+
+    .brand-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(36,198,153,0.08);
+      border: 1px solid rgba(36,198,153,0.25);
+      border-radius: 100px; padding: 7px 18px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      color: #24C699; text-transform: uppercase;
+      margin-bottom: 44px;
+    }
+
+    .quake-bars {
+      display: flex; align-items: center; gap: 2px; height: 14px;
+    }
+    .quake-bars span {
+      display: block; width: 2px; background: #24C699; border-radius: 1px;
+      animation: pulse-line 1.2s ease-in-out infinite;
+    }
+    .quake-bars span:nth-child(1) { height: 5px;  animation-delay: 0s; }
+    .quake-bars span:nth-child(2) { height: 10px; animation-delay: 0.15s; }
+    .quake-bars span:nth-child(3) { height: 14px; animation-delay: 0.3s; }
+    .quake-bars span:nth-child(4) { height: 8px;  animation-delay: 0.45s; }
+    .quake-bars span:nth-child(5) { height: 12px; animation-delay: 0.6s; }
+    .quake-bars span:nth-child(6) { height: 6px;  animation-delay: 0.75s; }
+    .quake-bars span:nth-child(7) { height: 10px; animation-delay: 0.9s; }
+
+    .cover-title {
+      font-size: 36px; font-weight: 900;
+      line-height: 1.25; text-align: center;
+      color: #F0F0F0; margin-bottom: 14px;
+      letter-spacing: -0.5px;
+    }
+    .cover-sub {
+      font-size: 15px; color: #666; line-height: 1.7;
+      text-align: center; margin-bottom: 44px;
+    }
+
+    .notice-box {
+      background: #131313; border: 1px solid #1E1E1E;
+      border-radius: 16px; padding: 24px;
+      margin-bottom: 36px; width: 100%;
+    }
+    .notice-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      color: #24C699; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .notice-box p {
+      font-size: 14px; color: #888; line-height: 1.8;
+    }
+    .notice-box strong { color: #F0F0F0; font-weight: 600; }
+    .notice-box .hl { color: #24C699; font-weight: 600; }
+
+    .badges {
+      display: flex; gap: 8px; justify-content: center;
+      flex-wrap: wrap; margin-bottom: 40px;
+    }
+    .badge {
+      background: #131313; border: 1px solid #1E1E1E;
+      border-radius: 100px; padding: 7px 16px;
+      font-size: 12px; color: #666;
+    }
+
+    .btn-start {
+      width: 100%; max-width: 320px;
+      background: #24C699; color: #000;
+      border: none; border-radius: 100px;
+      padding: 18px 40px; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 30px rgba(36,198,153,0.25);
+    }
+    .btn-start:hover { transform: translateY(-2px); box-shadow: 0 4px 40px rgba(36,198,153,0.4); }
+
+    /* Question screen */
+    .q-screen { min-height: 100vh; background: #0C0C0C; padding-bottom: 40px; }
+
+    .q-header {
+      padding: 28px 20px 0;
+      max-width: 540px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .q-badge {
+      background: rgba(36,198,153,0.1); color: #24C699;
+      border-radius: 100px; padding: 6px 16px;
+      font-size: 12px; font-weight: 700;
+    }
+    .q-counter { font-size: 12px; color: #333; }
+
+    .q-card {
+      background: #111; border-radius: 16px; padding: 26px;
+      border-left: 2px solid #24C699;
+      margin-bottom: 32px;
+    }
+    .q-scenario {
+      font-size: 14px; color: #555; line-height: 1.8;
+      margin-bottom: 14px; white-space: pre-line;
+    }
+    .q-text {
+      font-size: 19px; font-weight: 700; color: #F0F0F0; line-height: 1.4;
+    }
+
+    .options { display: flex; flex-direction: column; gap: 10px; }
+
+    .opt {
+      background: #111; border: 1.5px solid #1E1E1E;
+      border-radius: 14px; padding: 18px 20px;
+      cursor: pointer; text-align: left; width: 100%;
+      font-family: inherit; color: #CCC; font-size: 14px; line-height: 1.7;
+      transition: all 0.18s ease; display: flex; align-items: flex-start; gap: 14px;
+    }
+    .opt:hover:not(:disabled) { border-color: #24C699; background: rgba(36,198,153,0.06); color: #F0F0F0; }
+    .opt.selected { border-color: #24C699; background: rgba(36,198,153,0.1); color: #F0F0F0; }
+    .opt:disabled { opacity: 0.4; cursor: default; }
+    .opt.selected:disabled { opacity: 1; }
+
+    .opt-idx {
+      flex-shrink: 0; width: 24px; height: 24px;
+      border-radius: 50%; background: #1A1A1A;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #444;
+      transition: all 0.18s ease; margin-top: 1px;
+    }
+    .opt.selected .opt-idx { background: #24C699; color: #000; }
+
+    /* Result screen */
+    .result-hero {
+      background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(36,198,153,0.08) 0%, transparent 70%), #0C0C0C;
+      padding: 60px 20px 40px; text-align: center;
+    }
+    .result-emoji { font-size: 56px; margin-bottom: 24px; display: block; }
+    .result-en { font-size: 12px; color: #444; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+    .result-ko { font-size: 30px; font-weight: 900; color: #F0F0F0; margin-bottom: 16px; letter-spacing: -0.5px; }
+    .result-sub {
+      display: inline-block;
+      border: 1px solid rgba(36,198,153,0.3);
+      border-radius: 100px; padding: 9px 22px;
+      font-size: 13px; color: #24C699;
+      background: rgba(36,198,153,0.08);
+    }
+
+    .result-body { padding: 0 20px 60px; }
+
+    .r-section {
+      background: #111; border: 1px solid #1A1A1A;
+      border-radius: 18px; padding: 26px;
+      margin-bottom: 14px;
+    }
+    .r-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+      color: #24C699; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .r-body {
+      font-size: 14px; color: #888; line-height: 1.9;
+      white-space: pre-line;
+    }
+
+    .prog-section {
+      background: linear-gradient(135deg, rgba(36,198,153,0.1), rgba(36,198,153,0.04));
+      border: 1px solid rgba(36,198,153,0.2);
+      border-radius: 18px; padding: 26px; margin-bottom: 14px;
+    }
+    .prog-title {
+      font-size: 16px; font-weight: 700; color: #F0F0F0; margin-bottom: 10px;
+    }
+    .prog-desc { font-size: 14px; color: #888; line-height: 1.8; margin-bottom: 24px; }
+
+    .btn-cta {
+      width: 100%; background: #24C699; color: #000;
+      border: none; border-radius: 100px; padding: 16px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: all 0.2s ease;
+    }
+    .btn-cta:hover { background: #1aaa80; }
+
+    .action-row {
+      display: flex; gap: 10px; margin-top: 14px;
+    }
+    .btn-share {
+      flex: 1; background: #131313; border: 1px solid #1E1E1E;
+      color: #888; border-radius: 100px; padding: 14px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: all 0.2s ease;
+    }
+    .btn-share:hover { border-color: #333; color: #CCC; }
+    .btn-again {
+      flex: 1; background: transparent; border: 1px solid #1E1E1E;
+      color: #555; border-radius: 100px; padding: 14px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: all 0.2s ease;
+    }
+    .btn-again:hover { border-color: #333; color: #888; }
+
+    .footer-note {
+      text-align: center; margin-top: 32px;
+      font-size: 11px; color: #222;
+      border-top: 1px solid #141414; padding-top: 24px;
+    }
+
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: #24C699; color: #000; font-weight: 700;
+      padding: 12px 28px; border-radius: 100px; font-size: 13px;
+      animation: fadeUp 0.3s ease; z-index: 9999; white-space: nowrap;
+    }
+
+    @media (max-width: 400px) {
+      .cover-title { font-size: 28px; }
+      .q-text { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ─── DATA ───────────────────────────────────────────────────────
+
+    const QUESTIONS = [
+      {
+        id: 1,
+        scenario: "기획안 마감이 1시간 남았습니다.\nAI 초안의 논리는 완벽하지만, 데이터 하나가 미세하게 다릅니다.",
+        question: "당신의 선택은?",
+        options: [
+          { text: "미세한 오류도 신뢰도에 영향을 준다. 해당 수치를 직접 확인한 자료로 교체하고 제출한다", type: "isolated" },
+          { text: "AI에게 해당 데이터를 재검증하도록 추가 질문하고, 교차 확인된 수치로 즉시 수정해 제출한다", type: "creative" },
+          { text: "이미 검증된 유사 프로젝트 데이터를 참고해 해당 부분만 교체하는 것이 가장 안전하다고 판단하고 제출한다", type: "defensive" },
+          { text: "논리 구조가 완성된 초안에서 미세한 수치 차이는 허용 범위다. AI 결과물을 마무리해 제출한다", type: "cognitive" },
+        ]
+      },
+      {
+        id: 2,
+        scenario: "새로운 프로젝트 네이밍을 10개 제안해야 합니다.",
+        question: "평소 아이디어를 만드는 방식과 가장 가까운 것은?",
+        options: [
+          { text: "시장에서 검증된 네이밍 패턴과 성공 사례를 분석하고, 그 안에서 변형된 안을 제안한다", type: "defensive" },
+          { text: "레퍼런스 자료와 팀의 축적된 아이디어를 기반으로, 고유성이 담긴 후보를 직접 구성해 제안한다", type: "isolated" },
+          { text: "AI에게 초안을 받되, 키워드를 융합하거나 2~3차례 추가 질문으로 아이디어를 심화시켜 제안한다", type: "creative" },
+          { text: "AI에게 조건을 상세히 입력하고, 출력된 결과 중 목적에 가장 부합하는 것을 선별해 제안한다", type: "cognitive" },
+        ]
+      },
+      {
+        id: 3,
+        scenario: "마감을 자주 어기는 팀원이 있습니다.",
+        question: "따끔하지만 상처 주지 않는 피드백 이메일, 어떻게 쓰시나요?",
+        options: [
+          { text: "전달할 핵심 내용을 먼저 직접 구성하고, AI에게 문장 다듬기를 요청해 최종 검토 후 발송한다", type: "creative" },
+          { text: "조직 내 검증된 피드백 템플릿과 유사 사례를 참고해 상황에 맞게 수정한 뒤 발송한다", type: "defensive" },
+          { text: "미묘한 뉘앙스가 관계에 영향을 주는 소통인 만큼, AI 초안은 참고에 그치고 나의 언어로 직접 작성해 발송한다", type: "isolated" },
+          { text: "전달할 사실과 원하는 톤을 명확히 지정해 AI에게 초안을 작성하게 하고, 내용을 검토한 뒤 발송한다", type: "cognitive" },
+        ]
+      },
+      {
+        id: 4,
+        scenario: "나의 업무를 자동화해 준다는 획기적인 AI가 출시되었습니다.",
+        question: "당신의 가장 자연스러운 첫 반응은?",
+        options: [
+          { text: "도입 전 품질·보안 리스크를 먼저 검토하고, 충분한 확인이 끝난 뒤 도입 여부를 결정한다", type: "isolated" },
+          { text: "반복 업무를 빠르게 위임해 시간 자원을 확보하는 것이 우선이다. 즉시 도입하고 활용 범위를 넓혀간다", type: "cognitive" },
+          { text: "내부 지침이나 주변의 활용 사례가 충분히 쌓이면, 그에 맞춰 점진적으로 적용해 본다", type: "defensive" },
+          { text: "직접 써보면서 내 업무 중 어디에 얼마나 적합한지를 파악하고, 활용 범위를 스스로 설계한다", type: "creative" },
+        ]
+      },
+      {
+        id: 5,
+        scenario: "내 경험을 바탕으로 AI가 완벽하고 감동적인 글을 써주었습니다.\n좌절감 등 일부 감정이 다소 미화되었다면?",
+        question: "당신은 어떻게 하나요?",
+        options: [
+          { text: "독자에게 닿는 것이 목적이다. 더 설득력 있게 다듬어진 AI 버전을 선택하는 것이 합리적이라 판단한다", type: "cognitive" },
+          { text: "구조와 논리는 AI 것을 활용하되, 감정과 맥락은 투박하더라도 나의 실제 언어로 다시 고쳐 쓴다", type: "creative" },
+          { text: "내 경험에 대한 해석권은 내게 있다. AI 버전은 참고에 그치고, 처음부터 내 언어로 직접 쓴다", type: "isolated" },
+          { text: "업계에서 검증된 글쓰기 형식을 기반으로, 내 이야기를 그 구조 안에서 안전하게 담아낸다", type: "defensive" },
+        ]
+      },
+      {
+        id: 6,
+        scenario: "AI가 수익성이 높은 타겟팅 전략을 설계했습니다.\n그런데 이 전략이 특정 취약 계층의 접근성을 배제하고 있다는 걸 알게 됐다면?",
+        question: "당신의 판단은?",
+        options: [
+          { text: "데이터에 기반한 전략의 효율성을 우선 실행하고, 결과를 보며 보완 여부를 단계적으로 판단한다", type: "cognitive" },
+          { text: "수익 목표를 유지하면서도, 배제된 계층을 포용할 윤리적 안전장치를 추가해 전략을 수정한다", type: "creative" },
+          { text: "알고리즘 편향의 장기적 리스크를 우선 고려해 AI 분석을 보류하고, 직접 검토를 통해 전략을 재설계한다", type: "isolated" },
+          { text: "윤리적 판단 기준을 명확히 하기 위해 유사 업계의 대응 사례를 먼저 파악하고 참고해 방향을 결정한다", type: "defensive" },
+        ]
+      },
+      {
+        id: 7,
+        scenario: "나의 착오로 큰 문제가 생겼습니다.\n원인 분석과 사과문을 즉시 작성해 주는 AI가 있다면?",
+        question: "당신은 어떻게 하나요?",
+        options: [
+          { text: "신속한 수습이 최우선이다. AI의 분석과 초안을 활용해 빠르게 대응하고 상황을 정리한다", type: "cognitive" },
+          { text: "AI의 분석은 거울로 삼되, 사과와 수습은 반드시 나의 언어와 판단으로 직접 진행한다", type: "creative" },
+          { text: "진정한 원인 파악과 재발 방지는 내 직접적인 성찰에서 나온다고 판단해, AI보다 내 검토를 우선한다", type: "isolated" },
+          { text: "유사 상황에서 조직이나 업계가 대응한 방식을 참고해, 검증된 절차에 따라 체계적으로 수습한다", type: "defensive" },
+        ]
+      },
+    ];
+
+    const RESULTS = {
+      creative: {
+        emoji: "🎼",
+        en: "The Creative Orchestrator",
+        ko: "창조적 오케스트레이터",
+        sub: "AI를 지휘하되, 최종 해석권은 언제나 자기 안에 두는 사람",
+        report: `당신은 AI를 단순한 '자동 완성 도구'로 쓰지 않습니다. 아이디어를 얻고, 초안을 만들고, 관점을 확장하는 데 AI를 적극적으로 활용하면서도, 마지막 판단과 해석은 반드시 자신의 언어와 기준으로 가져옵니다.
+
+당신에게 AI는 검색창도, 비서도 아닙니다. 생각의 속도와 깊이를 함께 확장해주는 '두 번째 사고 파트너(Second Brain)'에 가깝습니다.
+
+다만, 생각을 확장하는 힘이 강한 만큼 하나의 과제가 어느새 프로젝트, 브랜드, 사업 모델로 불어나기 쉽습니다. 지금 당신에게 더 많은 아이디어보다 필요한 건, 때로는 '나만의 실행 마감선'입니다.`,
+        literacy: `당신은 AI와 꼬리에 꼬리를 무는 대화를 통해 결과물을 조율하는 '반복적 협업형'입니다. AI의 초안을 그대로 제출하기 전, 스스로 이런 질문을 던지는 편입니다.
+
+  • 이 답이 정말 맞을까?
+  • 누락된 맥락은 없을까?
+  • 나의 목적에 맞게 다시 구성할 수 있을까?
+  • 인간인 내가 최종적으로 판단해야 할 부분은 무엇일까?
+
+이런 질문을 습관적으로 던질 줄 아는 사람은 AI 시대에 쉽게 대체되지 않습니다.`,
+        prescription: `당신은 이미 자신의 Peoplequake(내면의 흔들림)를 꽤 잘 다루고 있습니다. 불확실한 상황에서도 AI를 두려워하기보다, 새로운 사고의 도구로 전환할 줄 압니다.
+
+이제 당신에게 필요한 건 프롬프트 모음집이 아닙니다. 당신의 사고방식과 업무 흐름에 맞게 AI를 배치하는 '나만의 AI 파트너십 시스템'입니다.
+
+AI를 사용할 때마다 이 세 가지를 기억하세요.
+  • 지금 AI에게 맡길 수 있는 영역은 어디인가?
+  • 반드시 내가 직접 판단해야 하는 부분은 무엇인가?
+  • 이 결과물을 나의 언어와 기준으로 다시 검토했는가?`,
+        coaching: `당신이 가진 창의성, 언어 감각, 문제 해결력이 아직 하나의 시스템으로 묶이지 않은 것 같다면, 그건 약점이 아닙니다. 아직 설계되지 않은 것뿐입니다.
+
+Peoplequake Lab은 당신의 가능성을 실제 결과물로 바꾸는 구조를 함께 설계합니다.`,
+        program: "🔑 프리미엄 AI 파트너십 프로그램",
+        programDesc: "AI를 이미 잘 쓰고 있지만, 아직 '나만의 방식'이 정립되지 않은 분을 위한 프로그램입니다. 기획, 글쓰기, 커리어 설계, 콘텐츠 제작 등 자신의 영역에서 AI를 진정한 협업 파트너로 만드는 개인 맞춤형 로드맵을 함께 설계합니다.",
+      },
+      cognitive: {
+        emoji: "🤖",
+        en: "The Cognitive Outsourcer",
+        ko: "인지적 아웃소서",
+        sub: "빠르고 실용적이되, 아직 자신만의 AI 필터가 장착 중인 사람",
+        report: `당신은 AI를 능숙하고 빠르게 활용합니다. 이건 분명한 강점입니다. 속도와 실행력은 AI 시대에 절대 가볍게 볼 수 없는 역량이거든요.
+
+그런데, 한 가지 질문을 해볼게요. 당신의 결과물에 '당신만의 지문'은 얼마나 남아 있나요?
+
+심리학에서 말하는 '인지적 구두쇠(Cognitive Miser)' 경향, 즉 에너지를 아끼기 위해 판단을 외부에 위임하는 성향은 AI와 만났을 때 가속될 수 있습니다. AI가 내놓는 매끄러운 답변을 자신의 생각이라 여기는 '지식의 착각(Illusion of Knowledge)'이 그 결과입니다.
+
+당신의 효율성은 유지하되, 거기에 '당신다움'을 더하는 것이 다음 단계입니다.`,
+        literacy: `지금 당신의 AI 활용 방식은 속도에 최적화되어 있습니다. 문제는 AI의 할루시네이션이나 데이터 편향이 걸러지지 않을 때 발생합니다.
+
+지금 당신에게 필요한 건 '창조적 마찰(Creative Friction)'입니다. AI의 답에 작은 균열을 내는 자신만의 질문, 자신만의 맥락을 한 스푼 섞는 습관이 당신을 도구 사용자에서 AI 지휘자로 바꿉니다.`,
+        prescription: `AI의 초안을 받은 뒤, 딱 한 가지 질문만 추가해 보세요.
+
+"이 결과에서 내가 동의하지 않는 부분은 어디인가?"
+
+그 작은 질문 하나가 결과물을 '내 것'으로 만드는 첫 번째 필터가 됩니다. 당신만의 Peoplequake(내면의 흔들림)를 결과물에 담는 연습, 지금 바로 시작할 수 있습니다.`,
+        coaching: `Peoplequake Lab은 당신의 빠른 실행력은 그대로 살리면서, 그 위에 당신만이 낼 수 있는 목소리와 판단력을 얹는 전략을 함께 설계합니다. AI를 더 잘 쓰는 것이 아니라, AI를 더 '나답게' 쓰는 법을 찾는 과정입니다.`,
+        program: "🔑 AI 역량 강화 프로그램",
+        programDesc: "AI를 빠르게 쓸 줄 알지만, 결과물에 '내 것'이 없다는 느낌이 드는 분을 위한 프로그램입니다. 프롬프트 설계, 비판적 검토, 할루시네이션 탐지, 결과물 재구성까지 — AI와 함께 더 나답게 일하는 구체적인 방법을 훈련합니다.",
+      },
+      isolated: {
+        emoji: "🔍",
+        en: "The Isolated Censor",
+        ko: "고립된 검열관",
+        sub: "기준이 높아서, 아직 마음에 드는 방식을 찾고 있는 사람",
+        report: `당신의 인문학적 소양과 철학적 기준은 실제로 높습니다. 그리고 그 기준은 AI 시대에 오히려 더 희귀하고 소중한 자원입니다.
+
+AI가 쏟아내는 수많은 결과물 중에서 '진짜인 것'과 '그럴싸한 것'을 구별할 수 있는 눈, 그게 바로 당신이 가진 것입니다.
+
+다만, 그 높은 기준이 기술을 향한 문을 닫는 쪽으로 작용하고 있다면 한 번쯤 점검해볼 만합니다. 심리학에서 말하는 '현상 유지 편향(Status Quo Bias)', 즉 변화 자체를 손실로 인식하는 경향이 개입했을 수 있습니다.
+
+기준을 낮추는 게 아닙니다. 그 기준으로 AI를 심문(Audit)하는 방향으로 전환하는 것이 당신의 다음 단계입니다.`,
+        literacy: `당신은 AI의 한계와 윤리적 리스크를 누구보다 잘 이해하고 있습니다. 그 비판 정신이 AI를 '배제'가 아닌 '감사(Audit)'의 대상으로 삼을 때, 당신은 가장 강력한 AI 리터러시 역량을 갖추게 됩니다.
+
+AI를 '까칠한 어시스턴트'라고 생각해보세요. 당신의 날카로운 기준으로 AI가 내놓은 결과를 다시 심문하는 것, 그게 실은 가장 정교한 AI 활용법입니다.`,
+        prescription: `AI를 전면 수용하거나 전면 거부하는 대신, 딱 한 가지 실험을 해보세요.
+
+당신이 가장 자신 있는 영역 하나에서만, AI를 '초고 생성기'로 써보세요. 그 초고를 당신의 기준으로 완전히 다시 써보세요.
+
+그 과정에서 AI가 어디까지 쓸 만한지, 당신이 직접 판단하게 됩니다. 그게 당신만의 Peoplequake(내면의 흔들림)를 정의하는 방법입니다.`,
+        coaching: `Peoplequake Lab은 당신의 타협하지 않는 감각을 훼손하지 않으면서, AI와 선택적으로 협업하는 방법을 함께 찾습니다. 당신의 비판 정신을 최고의 'AI 감사(Audit) 역량'으로 전환하는 경로를 설계해 드립니다.`,
+        program: "🔑 AI 리터러시 워크숍",
+        programDesc: "AI가 미덥지 않지만, 그 이유를 제대로 알고 싶은 분을 위한 워크숍입니다. AI의 작동 원리, 편향의 발생 구조, 비판적 검토 방법까지 — 당신의 높은 기준을 AI 활용의 무기로 만드는 실전 과정입니다.",
+      },
+      defensive: {
+        emoji: "🛡️",
+        en: "The Defensive Bystander",
+        ko: "방어적 방관자",
+        sub: "빠른 변화 앞에서, 자신만의 속도로 움직이는 사람",
+        report: `당신은 충동적으로 새로운 것을 따라가지 않습니다. 검증되지 않은 것을 무작정 받아들이기보다, 확인하고 나서 움직이는 편입니다. 이 신중함은 분명한 강점입니다.
+
+다만, 기술의 세계에서는 '관망'이 길어질수록 격차가 복리로 쌓입니다. AI를 먼저 써본 사람들이 6개월, 12개월씩 앞서가는 동안, 관망하는 사람은 같은 자리에 머무릅니다.
+
+심리학에서 말하는 '학습된 무기력(Learned Helplessness)'은 실패 경험이 반복되거나, 변화의 속도가 통제 불가능하게 느껴질 때 나타납니다. "나는 기술에 약해"라는 말이 자동으로 나온다면, 그건 사실이 아니라 학습된 생각일 수 있습니다.`,
+        literacy: `지금 당신에게 필요한 건 AI를 완전히 이해하는 것이 아닙니다. 딱 하나, 오늘 당장 내 일상에서 AI를 써볼 수 있는 작은 경험입니다.
+
+'미세한 통제감(Micro-control)'이라는 개념이 있습니다. 거대한 변화를 다 통제할 수는 없지만, 아주 작은 것 하나를 스스로 결정하고 실행했을 때 오는 자신감 — 그게 모든 변화의 시작점입니다.`,
+        prescription: `거대한 변화를 다 이해하려고 하지 않아도 됩니다.
+
+오늘 점심 메뉴를 고르듯, 아주 사소한 것 하나를 AI에게 물어보는 것부터 시작해보세요.
+
+당신 안의 Peoplequake(내면의 흔들림)를 두려워하지 마세요. 흔들림은 변화의 신호입니다. 당신의 속도로, 당신의 방식으로 시작하는 AI 적응이 가능합니다.`,
+        coaching: `Peoplequake Lab은 당신이 AI라는 낯선 환경에서도 심리적 안전감을 느끼며 작은 성공 경험을 쌓아갈 수 있도록 돕습니다. 빠름을 강요하지 않습니다. 당신의 속도에 맞춰, 가장 인간다운 방식으로 AI와 연결되는 경로를 함께 찾습니다.`,
+        program: "🔑 AI 적응 코칭",
+        programDesc: "AI를 시작해야 한다는 건 알지만, 어디서부터 시작해야 할지 모르는 분을 위한 코칭입니다. 심리적 장벽을 낮추고, 나의 일과 삶에 딱 맞는 AI 사용법을 함께 찾아갑니다. 빠르게 따라가는 게 아니라, 제대로 시작하는 것이 목표입니다.",
+      },
+    };
+
+    // ─── COMPONENTS ─────────────────────────────────────────────────
+
+    const CoverScreen = ({ onStart }) => (
+      <div className="cover">
+        <div className="wrap anim-up" style={{ width: '100%', textAlign: 'center' }}>
+          <div className="brand-pill">
+            <div className="quake-bars">
+              <span/><span/><span/><span/><span/><span/><span/>
+            </div>
+            Peoplequake Lab
+          </div>
+
+          <h1 className="cover-title">AI 인문학<br />역량 검사</h1>
+          <p className="cover-sub">
+            AI를 얼마나 잘 쓰는지가 아닌,<br />
+            <strong style={{color:'#F0F0F0'}}>AI 앞에서 당신이 어떤 사람인지</strong>를 보여줍니다.
+          </p>
+
+          <div className="notice-box">
+            <div className="notice-label">📌 검사 전 안내</div>
+            <p>
+              7개의 질문 모두에서 <span className="hl">어떤 선택지도 정답이 아닙니다.</span><br />
+              이상적인 내가 아닌, <strong>실제로 내가 선택할 가능성이 가장 높은 것</strong>을 고르세요.<br />
+              솔직할수록, 결과가 정확합니다.
+            </p>
+          </div>
+
+          <div className="badges">
+            <span className="badge">⏱️ 약 3분</span>
+            <span className="badge">📊 7개 문항</span>
+            <span className="badge">🔒 개인정보 수집 없음</span>
+          </div>
+
+          <button className="btn-start" onClick={onStart}>
+            검사 시작하기 →
+          </button>
+        </div>
+      </div>
+    );
+
+    const QuestionScreen = ({ question, idx, total, onAnswer, chosen }) => {
+      const pct = (idx / total) * 100;
+      const labels = ['A', 'B', 'C', 'D'];
+
+      return (
+        <div className="q-screen">
+          <div className="prog-rail"><div className="prog-fill" style={{ width: pct + '%' }} /></div>
+
+          <div className="q-header">
+            <span className="q-badge">Q{question.id} / {total}</span>
+            <span className="q-counter">{idx}/{total} 완료</span>
+          </div>
+
+          <div className="wrap">
+            <div className="q-card anim-up" key={question.id}>
+              <p className="q-scenario">{question.scenario}</p>
+              <h2 className="q-text">{question.question}</h2>
+            </div>
+
+            <div className="options">
+              {question.options.map((opt, i) => (
+                <button
+                  key={i}
+                  className={'opt' + (chosen === opt.type ? ' selected' : '')}
+                  onClick={() => onAnswer(opt.type)}
+                  disabled={chosen !== null}
+                  style={{ opacity: chosen !== null && chosen !== opt.type ? 0.3 : 1 }}
+                >
+                  <span className="opt-idx">{labels[i]}</span>
+                  {opt.text}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const ResultScreen = ({ type, onRestart }) => {
+      const r = RESULTS[type];
+      const [toast, setToast] = useState(false);
+
+      useEffect(() => { window.scrollTo(0, 0); }, []);
+
+      const share = () => {
+        const url = window.location.href;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(url).catch(() => fallbackCopy(url));
+        } else {
+          fallbackCopy(url);
+        }
+        setToast(true);
+        setTimeout(() => setToast(false), 2500);
+      };
+
+      const fallbackCopy = (text) => {
+        const el = document.createElement('textarea');
+        el.value = text; document.body.appendChild(el);
+        el.select(); document.execCommand('copy');
+        document.body.removeChild(el);
+      };
+
+      return (
+        <div>
+          <div className="result-hero anim-up">
+            <div className="brand-pill" style={{ marginBottom: '32px' }}>
+              <div className="quake-bars">
+                <span/><span/><span/><span/><span/><span/><span/>
+              </div>
+              Peoplequake Lab
+            </div>
+            <span className="result-emoji">{r.emoji}</span>
+            <p className="result-en">{r.en}</p>
+            <h1 className="result-ko">{r.ko}</h1>
+            <span className="result-sub">{r.sub}</span>
+          </div>
+
+          <div className="result-body wrap anim-in">
+            <div className="r-section">
+              <div className="r-label">👓 분석 리포트</div>
+              <p className="r-body">{r.report}</p>
+            </div>
+
+            <div className="r-section">
+              <div className="r-label">⛑ AI 리터러시 진단</div>
+              <p className="r-body">{r.literacy}</p>
+            </div>
+
+            <div className="r-section">
+              <div className="r-label">☺️ Peoplequake Lab의 처방전</div>
+              <p className="r-body">{r.prescription}</p>
+            </div>
+
+            <div className="r-section">
+              <div className="r-label">🧙‍♀️ Peoplequake Lab 커리어 코칭</div>
+              <p className="r-body">{r.coaching}</p>
+            </div>
+
+            <div className="prog-section">
+              <div className="r-label">👌 추천 프로그램</div>
+              <p className="prog-title">{r.program}</p>
+              <p className="prog-desc">{r.programDesc}</p>
+              <button className="btn-cta" onClick={() => window.open('https://peoplequakelab.com', '_blank')}>
+                프로그램 신청하기 →
+              </button>
+            </div>
+
+            <div className="action-row">
+              <button className="btn-share" onClick={share}>🔗 링크 공유</button>
+              <button className="btn-again" onClick={onRestart}>↺ 다시 검사</button>
+            </div>
+
+            <div className="footer-note">© 2025 Peoplequake Lab. All rights reserved.</div>
+          </div>
+
+          {toast && <div className="toast">✓ 링크가 복사되었습니다!</div>}
+        </div>
+      );
+    };
+
+    // ─── SCORING ────────────────────────────────────────────────────
+
+    const calcResult = (answers) => {
+      const s = { creative: 0, cognitive: 0, isolated: 0, defensive: 0 };
+      answers.forEach(t => s[t]++);
+      const max = Math.max(...Object.values(s));
+      const tops = Object.keys(s).filter(k => s[k] === max);
+      if (tops.length === 1) return tops[0];
+      return answers.find(t => tops.includes(t));
+    };
+
+    // ─── APP ────────────────────────────────────────────────────────
+
+    const App = () => {
+      const [screen, setScreen]   = useState('cover');
+      const [qIdx, setQIdx]       = useState(0);
+      const [answers, setAnswers] = useState([]);
+      const [chosen, setChosen]   = useState(null);
+
+      useEffect(() => {
+        const el = document.getElementById('loading');
+        if (el) { el.classList.add('hidden'); setTimeout(() => el.remove(), 400); }
+      }, []);
+
+      const handleAnswer = (type) => {
+        if (chosen !== null) return;
+        setChosen(type);
+        setTimeout(() => {
+          const next = [...answers, type];
+          setAnswers(next);
+          setChosen(null);
+          if (qIdx < QUESTIONS.length - 1) {
+            setQIdx(qIdx + 1);
+          } else {
+            setScreen('result');
+          }
+        }, 480);
+      };
+
+      const restart = () => {
+        setScreen('cover'); setQIdx(0); setAnswers([]); setChosen(null);
+        window.scrollTo(0, 0);
+      };
+
+      if (screen === 'cover')  return <CoverScreen onStart={() => setScreen('question')} />;
+      if (screen === 'question') return (
+        <QuestionScreen
+          question={QUESTIONS[qIdx]} idx={qIdx} total={QUESTIONS.length}
+          onAnswer={handleAnswer} chosen={chosen}
+        />
+      );
+      if (screen === 'result') return <ResultScreen type={calcResult(answers)} onRestart={restart} />;
+      return null;
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
