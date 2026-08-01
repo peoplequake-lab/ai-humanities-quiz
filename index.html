@@ -57,6 +57,66 @@
     .anim-up  { animation: fadeUp  0.5s ease forwards; }
     .anim-in  { animation: fadeIn  0.4s ease forwards; }
 
+    /* Analyzing screen */
+    @keyframes grow-bar {
+      from { width: 0%; }
+      to   { width: 100%; }
+    }
+    @keyframes blink-dot {
+      0%,100% { opacity: 0.2; }
+      50%      { opacity: 1; }
+    }
+    .analyzing-screen {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 20px;
+      background: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(36,198,153,0.07) 0%, transparent 70%), #0C0C0C;
+    }
+    .analyzing-bars {
+      display: flex; align-items: flex-end; gap: 4px; height: 40px; margin-bottom: 36px;
+    }
+    .analyzing-bars span {
+      display: block; width: 4px; background: #24C699; border-radius: 2px;
+      animation: pulse-line 0.8s ease-in-out infinite;
+    }
+    .analyzing-bars span:nth-child(1) { height: 16px; animation-delay: 0s; }
+    .analyzing-bars span:nth-child(2) { height: 28px; animation-delay: 0.1s; }
+    .analyzing-bars span:nth-child(3) { height: 40px; animation-delay: 0.2s; }
+    .analyzing-bars span:nth-child(4) { height: 24px; animation-delay: 0.3s; }
+    .analyzing-bars span:nth-child(5) { height: 36px; animation-delay: 0.4s; }
+    .analyzing-bars span:nth-child(6) { height: 20px; animation-delay: 0.5s; }
+    .analyzing-bars span:nth-child(7) { height: 32px; animation-delay: 0.6s; }
+    .analyzing-bars span:nth-child(8) { height: 16px; animation-delay: 0.7s; }
+    .analyzing-bars span:nth-child(9) { height: 26px; animation-delay: 0.8s; }
+    .analyzing-title {
+      font-size: 22px; font-weight: 900; color: #F0F0F0;
+      margin-bottom: 10px; letter-spacing: -0.3px;
+    }
+    .analyzing-msg {
+      font-size: 14px; color: #555; margin-bottom: 44px;
+      min-height: 22px; transition: opacity 0.3s ease;
+    }
+    .analyzing-rail {
+      width: 240px; max-width: 80vw; height: 2px;
+      background: #1A1A1A; border-radius: 1px; overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .analyzing-fill {
+      height: 100%; background: linear-gradient(90deg, #24C699, #1aaa80);
+      border-radius: 1px;
+      animation: grow-bar 2.5s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .analyzing-pct {
+      font-size: 11px; color: #333; letter-spacing: 1px; font-weight: 700;
+    }
+    .dot-blink {
+      display: inline-block;
+      animation: blink-dot 1s ease-in-out infinite;
+    }
+    .dot-blink:nth-child(2) { animation-delay: 0.2s; }
+    .dot-blink:nth-child(3) { animation-delay: 0.4s; }
+
     .wrap {
       max-width: 540px;
       margin: 0 auto;
@@ -648,6 +708,62 @@ AI를 '까칠한 어시스턴트'라고 생각해보세요. 당신의 날카로�
       );
     };
 
+    // ─── ANALYZING SCREEN ───────────────────────────────────────────
+
+    const MESSAGES = [
+      "7개의 응답 패턴을 분석하고 있습니다",
+      "AI 리터러시 유형을 분류하고 있습니다",
+      "당신만의 유형을 도출하고 있습니다",
+      "분석이 완료되었습니다",
+    ];
+
+    const AnalyzingScreen = ({ onDone }) => {
+      const [msgIdx, setMsgIdx] = useState(0);
+      const [pct, setPct]       = useState(0);
+
+      useEffect(() => {
+        window.scrollTo(0, 0);
+        // Cycle messages every 620ms
+        const msgTimer = setInterval(() => {
+          setMsgIdx(i => Math.min(i + 1, MESSAGES.length - 1));
+        }, 620);
+        // Smooth percentage counter over 2.4s
+        const start = Date.now();
+        const pctTimer = setInterval(() => {
+          const elapsed = Date.now() - start;
+          const p = Math.min(Math.round((elapsed / 2400) * 100), 100);
+          setPct(p);
+          if (p >= 100) clearInterval(pctTimer);
+        }, 30);
+        // Transition to result after 2.5s
+        const doneTimer = setTimeout(onDone, 2500);
+        return () => {
+          clearInterval(msgTimer);
+          clearInterval(pctTimer);
+          clearTimeout(doneTimer);
+        };
+      }, []);
+
+      return (
+        <div className="analyzing-screen anim-in">
+          <div className="analyzing-bars">
+            <span/><span/><span/><span/><span/><span/><span/><span/><span/>
+          </div>
+          <h2 className="analyzing-title">결과 분석 중</h2>
+          <p className="analyzing-msg">
+            {MESSAGES[msgIdx]}
+            <span className="dot-blink">.</span>
+            <span className="dot-blink">.</span>
+            <span className="dot-blink">.</span>
+          </p>
+          <div className="analyzing-rail">
+            <div className="analyzing-fill" />
+          </div>
+          <p className="analyzing-pct">{pct}%</p>
+        </div>
+      );
+    };
+
     // ─── SCORING ────────────────────────────────────────────────────
 
     const calcResult = (answers) => {
@@ -662,10 +778,11 @@ AI를 '까칠한 어시스턴트'라고 생각해보세요. 당신의 날카로�
     // ─── APP ────────────────────────────────────────────────────────
 
     const App = () => {
-      const [screen, setScreen]   = useState('cover');
-      const [qIdx, setQIdx]       = useState(0);
-      const [answers, setAnswers] = useState([]);
-      const [chosen, setChosen]   = useState(null);
+      const [screen, setScreen]     = useState('cover');
+      const [qIdx, setQIdx]         = useState(0);
+      const [answers, setAnswers]   = useState([]);
+      const [chosen, setChosen]     = useState(null);
+      const [finalAnswers, setFinalAnswers] = useState([]);
 
       useEffect(() => {
         const el = document.getElementById('loading');
@@ -682,24 +799,32 @@ AI를 '까칠한 어시스턴트'라고 생각해보세요. 당신의 날카로�
           if (qIdx < QUESTIONS.length - 1) {
             setQIdx(qIdx + 1);
           } else {
-            setScreen('result');
+            // Last question → go to analyzing screen, save final answers
+            setFinalAnswers(next);
+            setScreen('analyzing');
           }
         }, 480);
       };
 
       const restart = () => {
-        setScreen('cover'); setQIdx(0); setAnswers([]); setChosen(null);
+        setScreen('cover'); setQIdx(0);
+        setAnswers([]); setFinalAnswers([]); setChosen(null);
         window.scrollTo(0, 0);
       };
 
-      if (screen === 'cover')  return <CoverScreen onStart={() => setScreen('question')} />;
-      if (screen === 'question') return (
+      if (screen === 'cover')     return <CoverScreen onStart={() => setScreen('question')} />;
+      if (screen === 'question')  return (
         <QuestionScreen
           question={QUESTIONS[qIdx]} idx={qIdx} total={QUESTIONS.length}
           onAnswer={handleAnswer} chosen={chosen}
         />
       );
-      if (screen === 'result') return <ResultScreen type={calcResult(answers)} onRestart={restart} />;
+      if (screen === 'analyzing') return (
+        <AnalyzingScreen onDone={() => setScreen('result')} />
+      );
+      if (screen === 'result')    return (
+        <ResultScreen type={calcResult(finalAnswers)} onRestart={restart} />
+      );
       return null;
     };
 
